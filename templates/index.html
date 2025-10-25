@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Buscador Magic Singles</title>
+<style>
+body { font-family: Arial; background:#1b1b1b; color:#eee; text-align:center; padding:20px;}
+h1{color:#f2b632;}
+input[type=text], select{width:180px;padding:10px;font-size:14px;margin:2px;}
+button{padding:10px 20px;font-size:16px;margin:5px;cursor:pointer;}
+.card-entry{padding:10px;margin:5px;border-radius:8px;display:inline-block;width:250px;text-align:left;}
+.comun{background:#7d7d7d;}
+.infrecuente{background:#4a90e2;}
+.rara{background:#f2b632;color:#000;}
+.mitica{background:#ff6347;}
+#lastSearched{margin-top:30px;text-align:left;max-width:800px;margin:auto;}
+</style>
+</head>
+<body>
+<h1>Buscador Magic Singles</h1>
+<input type="text" id="cardName" placeholder="Nombre de la carta" onkeydown="if(event.key==='Enter'){buscarCarta();}">
+<select id="language">
+  <option value="">Idioma</option>
+  <option value="en">English</option>
+  <option value="es">Español</option>
+  <option value="de">Deutsch</option>
+</select>
+<select id="condition">
+  <option value="">Estado</option>
+  <option value="NM">Near Mint</option>
+  <option value="LP">Lightly Played</option>
+  <option value="MP">Moderately Played</option>
+  <option value="HP">Heavily Played</option>
+</select>
+<select id="foil">
+  <option value="">Foil?</option>
+  <option value="true">Foil</option>
+  <option value="false">No Foil</option>
+</select>
+<input type="text" id="set" placeholder="Edición / Set">
+<button onclick="buscarCarta()">Buscar</button>
+
+<div id="result"></div>
+
+<h3>Últimas cartas buscadas:</h3>
+<div id="lastSearched"></div>
+
+<script>
+let lastSearchedList=[];
+
+async function buscarCarta(){
+    const nombre=document.getElementById('cardName').value.trim();
+    const idioma=document.getElementById('language').value;
+    const estado=document.getElementById('condition').value;
+    const foil=document.getElementById('foil').value;
+    const set_name=document.getElementById('set').value;
+    const resultDiv=document.getElementById('result');
+    if(!nombre){resultDiv.innerHTML="Introduce el nombre de la carta.";return;}
+
+    try{
+        const params=new URLSearchParams({nombre, idioma, estado, foil, set:set_name});
+        const response=await fetch(`/precio?${params.toString()}`);
+        const data=await response.json();
+        if(data.error){resultDiv.innerHTML=`<p>${data.error}</p>`;return;}
+
+        let html="";
+        data.forEach(carta=>{
+            html+=`<div class="card-entry ${carta.rarity}">
+            <strong>${carta.nombre}</strong><br>
+            Precio mercado: ${carta.precio} €<br>
+            Precio compra: ${carta.compra} €<br>
+            Precio venta: ${carta.venta} €<br>
+            Idioma: ${carta.language}<br>
+            Estado: ${carta.condition}<br>
+            Foil: ${carta.foil}<br>
+            Set: ${carta.set}
+            </div>`;
+        });
+        resultDiv.innerHTML=html;
+
+        lastSearchedList.unshift(html);
+        if(lastSearchedList.length>5) lastSearchedList.pop();
+        document.getElementById('lastSearched').innerHTML=lastSearchedList.join('');
+    }catch(error){
+        resultDiv.innerHTML=`<p>Error al conectar con el backend: ${error.message}</p>`;
+    }
+}
+</script>
+</body>
+</html>
